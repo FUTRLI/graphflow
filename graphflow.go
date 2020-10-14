@@ -16,12 +16,14 @@ const (
 	ALWAYS PathCondition = 0
 	YES    PathCondition = 1
 	NO     PathCondition = 2
+	ERROR  PathCondition = 3
 )
 
 var PathConditionName = map[PathCondition]string{
 	0: "ALWAYS",
 	1: "YES",
 	2: "NO",
+	3: "ERROR",
 }
 
 type Graphflow struct {
