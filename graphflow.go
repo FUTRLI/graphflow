@@ -166,7 +166,10 @@ func (gf *Graphflow) execute() error {
 		}
 		task := q.dequeue()
 		visited[task] = true
-		task.Execute(gf.context)
+		err := task.Execute(gf.context)
+		if err != nil {
+			return err
+		}
 
 		near := gf.paths[task]
 
