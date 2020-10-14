@@ -267,10 +267,14 @@ func (gf *Graphflow) generateGraph(showPath bool) (bytes.Buffer, error) {
 		_, isStartTask := from.(*StartTask)
 		if isStartTask {
 			n1.SetColor("7") // orange
-		} else if len(edge) == 1 {
-			n1.SetColor("9") // mauve
 		} else {
-			n1.SetColor("3") // green
+			n1.SetColor("9") // mauve
+			for label := range edge {
+				if label == YES || label == NO {
+					n1.SetColor("3") // green
+					break
+				}
+			}
 		}
 		if showPath {
 			if !gf.executed[from] {
