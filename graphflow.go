@@ -252,6 +252,7 @@ func (gf *Graphflow) generateGraph(showPath bool) (bytes.Buffer, error) {
 				return buf, err
 			}
 			n.SetShape(cgraph.NoteShape)
+			n.SetMargin(0.2)
 		}
 	}
 	for from, edge := range gf.paths {
