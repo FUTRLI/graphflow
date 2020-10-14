@@ -248,7 +248,7 @@ func (gf *Graphflow) generateGraph(showPath bool, contextKeysToRender ...string)
 			if err != nil {
 				return buf, err
 			}
-			n.SetShape(cgraph.NoteShape)
+			n.SetShape(cgraph.UnderlineShape)
 			n.SetMargin(0.2)
 		}
 	}
