@@ -200,14 +200,14 @@ func (wf *Graphflow) findStartTask() (TaskIntf, error) {
 }
 
 func (gf *Graphflow) RenderGraph() (bytes.Buffer, error) {
-	return gf.generateGraph(false)
+	return gf.generateGraph(false, "")
 }
 
-func (gf *Graphflow) RenderPathThroughGraph() (bytes.Buffer, error) {
-	return gf.generateGraph(true)
+func (gf *Graphflow) RenderPathThroughGraph(contextKeysToRender ...string) (bytes.Buffer, error) {
+	return gf.generateGraph(true, contextKeysToRender...)
 }
 
-func (gf *Graphflow) generateGraph(showPath bool) (bytes.Buffer, error) {
+func (gf *Graphflow) generateGraph(showPath bool, contextKeysToRender ...string) (bytes.Buffer, error) {
 	var buf bytes.Buffer
 	g := graphviz.New()
 	graph, err := g.Graph()
@@ -239,11 +239,8 @@ func (gf *Graphflow) generateGraph(showPath bool) (bytes.Buffer, error) {
 	}
 	if showPath {
 		desc := ""
-		for k, v := range gf.context.values {
-			str, ok := v.(string)
-			if ok {
-				desc = fmt.Sprintf("%s\n%s = %s", desc, k, str)
-			}
+		for _, k := range contextKeysToRender {
+			desc = fmt.Sprintf("%s\n%s = %v", desc, k, gf.context.Get(k))
 		}
 		if desc != "" {
 			desc = fmt.Sprintf("This is the path taken when:\n%s", desc)
