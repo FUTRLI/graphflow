@@ -238,16 +238,21 @@ func (gf *Graphflow) generateGraph(showPath bool) (bytes.Buffer, error) {
 		nodes[fmt.Sprintf("%T", t)] = n
 	}
 	if showPath {
-		desc := "This is the path taken when:"
+		desc := ""
 		for k, v := range gf.context.values {
-			desc = fmt.Sprintf("%s\n%s = %v", desc, k, v)
+			str, ok := v.(string)
+			if ok {
+				desc = fmt.Sprintf("%s\n%s = %s", desc, k, str)
+			}
 		}
-		n, err := graph.CreateNode(desc)
-		if err != nil {
-			return buf, err
+		if desc != "" {
+			desc = fmt.Sprintf("This is the path taken when:\n%s", desc)
+			n, err := graph.CreateNode(desc)
+			if err != nil {
+				return buf, err
+			}
+			n.SetShape(cgraph.NoteShape)
 		}
-		n.SetShape(cgraph.NoteShape)
-
 	}
 	for from, edge := range gf.paths {
 		n1 := nodes[fmt.Sprintf("%T", from)]
