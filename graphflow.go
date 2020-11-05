@@ -203,7 +203,10 @@ func (gf *Graphflow) RenderGraph() (bytes.Buffer, error) {
 	return gf.generateGraph(false, "")
 }
 
-func (gf *Graphflow) RenderPathThroughGraph(contextKeysToRender ...string) (bytes.Buffer, error) {
+func (gf *Graphflow) RenderPathThroughGraph(context *ExecutionContext, contextKeysToRender ...string) (bytes.Buffer, error) {
+	if len(gf.executed) == 0 {
+		gf.Run(context)
+	}
 	return gf.generateGraph(true, contextKeysToRender...)
 }
 
