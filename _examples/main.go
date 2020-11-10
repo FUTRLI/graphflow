@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"io/ioutil"
 
-	"github.com/futrli/graphflow/examples/tasks"
+	"github.com/futrli/graphflow/_examples/tasks"
 
 	"github.com/futrli/graphflow"
 )
