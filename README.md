@@ -1,4 +1,4 @@
-# graphflow [![Go](https://github.com/futrli/graphflow/workflows/Go/badge.svg)](https://github.com/futrli/graphflow/actions) 
+# graphflow [![Go](https://github.com/futrli/graphflow/workflows/CI/badge.svg)](https://github.com/futrli/graphflow/actions) 
 
 graphflow supports the building, execution and graphical rendering of simple linear workflows.
 
