@@ -90,11 +90,11 @@ func main() {
 }
 ```
 
-## The above would output this graph.png, giving an overview of the graphflow:
+### The above would output this graph.png, giving an overview of the graphflow:
 
 <img src="https://github.com/FUTRLI/graphflow/raw/master/_examples/graph.png"></img>
 
-## and this pathThroughGraph.png, showing the path taken through the graph:
+### and this pathThroughGraph.png, showing the path taken through the graph:
 
 <img src="https://github.com/FUTRLI/graphflow/raw/master/_examples/pathThroughGraph.png"></img>
 
