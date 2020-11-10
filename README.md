@@ -98,6 +98,9 @@ func main() {
 
 The above would output this graph.png:
 
+<img src="https://github.com/FUTRLI/graphflow/raw/master/_examples/graph.png"></img>
+
 and this pathThroughGraph.png:
 
+<img src="https://github.com/FUTRLI/graphflow/raw/master/_examples/pathThroughGraph.png"></img>
 
