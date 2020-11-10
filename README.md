@@ -1,19 +1,14 @@
 # graphflow [![Go](https://github.com/futrli/graphflow/workflows/Go/badge.svg)](https://github.com/futrli/graphflow/actions) 
 
-graphflow supports the building, execution and graphical rendering of simple linear workflows
+graphflow supports the building, execution and graphical rendering of simple linear workflows.
 
 There may be times when complex business logic is best represented in the form of a decision tree or a workflow
-comprised of some "context" and a series of yes/no questions and actions or decisions that can be made against this
-context.
+made up of a series of yes/no questions and actions or decisions that can be taken.
 
-A naive representation of this in code could be a error-prone block of deeply nested if / else conditions. In such a
-case it is difficult for a product stakeholder to precisely express what they expect and it's equally difficult for them
-to validate it once it's built.
+In such a case it is difficult for a product stakeholder to precisely express what they expect and it's equally difficult for them to validate it once it's built.
 
-The graphflow package allows this logic to instead be represented as a self-documenting series of Task nodes with
-conditional Paths between them. It is self-documenting because it includes the ability to output a graphviz png
-representation of the entire graph as well as the particular path taken through the graph when provided with a given
-context.
+The graphflow package allows this logic to be built and represented as a self-documenting series of Task nodes with
+conditional Paths between them.
 
 # Features
 
@@ -96,11 +91,11 @@ func main() {
 }
 ```
 
-The above would output this graph.png:
+The above would output this graph.png, giving an overview of the graphflow:
 
 <img src="https://github.com/FUTRLI/graphflow/raw/master/_examples/graph.png"></img>
 
-and this pathThroughGraph.png:
+and this pathThroughGraph.png, showing the path taken through the graph:
 
 <img src="https://github.com/FUTRLI/graphflow/raw/master/_examples/pathThroughGraph.png"></img>
 
