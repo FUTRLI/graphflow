@@ -116,9 +116,10 @@ func (ctx *ExecutionContext) Set(key string, value interface{}) {
 // TaskIntf is the interface that all graphflow Tasks need to implement.
 // New Tasks should be defined like so:
 //
-//     	type MyNewTask struct {
-//			graphflow.Task
-//		}
+// Example:
+//   type MyNewTask struct {
+//	   graphflow.Task
+//	 }
 //
 // This ensures that they include the implementation of SetExitPath(PathCondition)
 // provided by graphflow.Task
@@ -129,11 +130,12 @@ type TaskIntf interface {
 	getExitPath() PathCondition
 }
 
-// Task is a struct that all new Tasks should include in their definition like so:
+// Task is a struct that all new Tasks should include in their definition.
 //
-//     	type MyNewTask struct {
-//			graphflow.Task
-//		}
+// Example:
+//   type MyNewTask struct {
+//	   graphflow.Task
+//	 }
 type Task struct {
 	exitPath PathCondition
 }
@@ -157,7 +159,7 @@ func (t *Task) getExitPath() PathCondition {
 // String is the default implementation of the String() method that needs to be overridden by Tasks you create.
 // It should return a meaningful description of your Task that'll be output in the graphviz png
 func (t *Task) String() string {
-	return "Unnamed TaskIntf"
+	return "Unnamed Task"
 }
 
 // StartTask is a Task provided by the package. Every graphflow must include a StartTask.
@@ -225,17 +227,17 @@ func (q *taskQueue) isEmpty() bool {
 	return len(q.tasks) == 0
 }
 
-func (q *taskQueue) size() int {
-	return len(q.tasks)
-}
-
 func (gf *Graphflow) execute() error {
-	q := taskQueue{}
-	q.new()
+	err := gf.validateTasks()
+	if err != nil {
+		return err
+	}
 	t, err := gf.findStartTask()
 	if err != nil {
 		return err
 	}
+	q := taskQueue{}
+	q.new()
 	q.enqueue(t)
 	visited := make(map[TaskIntf]bool)
 	for {
@@ -273,6 +275,54 @@ func (gf *Graphflow) findStartTask() (TaskIntf, error) {
 		}
 	}
 	return nil, errors.New("Workflow needs to contain a task of type StartTask")
+}
+
+func (gf *Graphflow) findEndTask() (TaskIntf, error) {
+	for _, task := range gf.tasks {
+		_, isEndTask := task.(*EndTask)
+		if isEndTask {
+			return task, nil
+		}
+	}
+	return nil, errors.New("Workflow needs to contain a task of type EndTask")
+}
+
+func (gf *Graphflow) validateTasks() error {
+	_, err := gf.findEndTask()
+	if err != nil {
+		return err
+	}
+	for task := range gf.paths {
+		conditions := []PathCondition{}
+		for condition := range gf.paths[task] {
+			conditions = append(conditions, condition)
+		}
+		if contains(conditions, ALWAYS) {
+			if contains(conditions, YES) {
+				return fmt.Errorf("Task %s cannot have an ALWAYS path as well as a YES path", task.String())
+			} else if contains(conditions, NO) {
+				return fmt.Errorf("Task %s cannot have an ALWAYS path as well as a NO path", task.String())
+			}
+		} else if contains(conditions, YES) {
+			if !contains(conditions, NO) {
+				return fmt.Errorf("Task %s has as a YES path but no NO path", task.String())
+			}
+		} else if contains(conditions, NO) {
+			if !contains(conditions, YES) {
+				return fmt.Errorf("Task %s has as a NO path but no YES path", task.String())
+			}
+		}
+	}
+	return nil
+}
+
+func contains(conditions []PathCondition, condition PathCondition) bool {
+	for _, c := range conditions {
+		if c == condition {
+			return true
+		}
+	}
+	return false
 }
 
 func (gf *Graphflow) generateGraph(showPath bool, contextKeysToRender ...string) (bytes.Buffer, error) {

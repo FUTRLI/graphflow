@@ -25,7 +25,7 @@ func buildGraphflow() graphflow.Graphflow {
 	// add task instances to the graphflow
 	gf.AddTask(start)
 	gf.AddTask(isTheSkyCloudy)
-	gf.AddTask(forecastFog)
+	gf.AddTask(forecastFog) // leave this deliberately orphaned with no Paths in or out
 	gf.AddTask(forecastRain)
 	gf.AddTask(forecastSun)
 	gf.AddTask(end)
