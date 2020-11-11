@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"io/ioutil"
+	"log"
 
 	"github.com/futrli/graphflow/_examples/tasks"
 
@@ -37,6 +38,12 @@ func buildGraphflow() graphflow.Graphflow {
 	gf.AddPath(forecastRain, graphflow.ALWAYS, end)
 	gf.AddPath(forecastSun, graphflow.ALWAYS, end)
 
+	// create a task group
+	forecastingGroup := gf.NewTaskGroup("Forecasting")
+
+	// add forecasting tasks to this group
+	forecastingGroup.AddTasks(forecastFog, forecastRain, forecastSun)
+
 	return gf
 }
 
@@ -49,7 +56,10 @@ func main() {
 
 	gf := buildGraphflow()
 
-	gf.Run(ctx)
+	err := gf.Run(ctx)
+	if err != nil {
+		log.Fatalf("Error: %s\n", err)
+	}
 
 	fmt.Printf("Successfully forecasted: %v\n", ctx.Get("Forecast"))
 

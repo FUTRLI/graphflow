@@ -353,3 +353,54 @@ func TestWorkflowWithTaskWithNoName(t *testing.T) {
 	ctx := gf.GetContext()
 	assert.Equal(t, "Nothing", ctx.Get("Forecast"))
 }
+
+func TestAddTaskGroups(t *testing.T) {
+	var gf Graphflow
+
+	// create task instances
+	start := new(StartTask)
+	forecastSun := new(ForecastSun)
+	end := new(EndTask)
+
+	// add task instances to the graphflow
+	gf.AddTask(start)
+	gf.AddTask(forecastSun)
+	gf.AddTask(end)
+
+	taskGroup := gf.NewTaskGroup("my taskgroup")
+	taskGroup.AddTasks(forecastSun)
+
+	assert.Len(t, gf.taskGroups, 1)
+	assert.Len(t, gf.taskGroups[0].tasks, 1)
+	assert.Contains(t, gf.taskGroups, taskGroup)
+	assert.Contains(t, gf.taskGroups[0].tasks, forecastSun)
+
+	_, err := gf.RenderPathThroughGraph(new(ExecutionContext))
+
+	assert.Nil(t, err)
+}
+
+func TestTaskGroupsWithDuplicateTasks(t *testing.T) {
+	var gf Graphflow
+
+	// create task instances
+	start := new(StartTask)
+	forecastSun := new(ForecastSun)
+	end := new(EndTask)
+
+	// add task instances to the graphflow
+	gf.AddTask(start)
+	gf.AddTask(forecastSun)
+	gf.AddTask(end)
+
+	taskGroup := gf.NewTaskGroup("my taskgroup")
+	taskGroup.AddTasks(forecastSun)
+
+	// don't allow tasks to appear in more than one TaskGroup
+	duplicateTaskGroup := gf.NewTaskGroup("my other taskgroup")
+	duplicateTaskGroup.AddTasks(forecastSun)
+
+	_, err := gf.RenderPathThroughGraph(new(ExecutionContext))
+
+	assert.NotNil(t, err)
+}

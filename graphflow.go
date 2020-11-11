@@ -1,17 +1,10 @@
-// Package graphflow supports the building, execution and graphical rendering of simple linear workflows
+// Package graphflow supports the building, execution and graphical rendering of simple linear workflows.
 //
 // There may be times when complex business logic is best represented in the form of a decision tree or a workflow
-// comprised of some "context" and a series of yes/no questions and actions or decisions that can be made against this
-// context.
+// made up of a series of yes/no questions and actions or decisions that should be taken.
 //
-// A naive representation of this in code could be a error-prone block of deeply nested if / else conditions. In such a
-// case it is difficult for a product stakeholder to precisely express what they expect and it's equally difficult for them
-// to validate it once it's built.
-//
-// The graphflow package allows this logic to instead be represented as a self-documenting series of Task nodes with
-// conditional Paths between them. It is self-documenting because it includes the ability to output a graphviz png
-// representation of the entire graph as well as the particular path taken through the graph when provided with a given
-// context.
+// The graphflow package allows this logic to be built and represented as a self-documenting series of Task nodes with
+// conditional Paths between them, allowing a project stakeholder to easily validate what has been built.
 //
 package graphflow
 
@@ -52,10 +45,11 @@ var PathConditionName = map[PathCondition]string{
 // Graphflow represents a series of Tasks with defined Paths between them constructed as a simple workflow.
 // Graphflow methods support its construction, execution and rendering as a graphflow png.
 type Graphflow struct {
-	context  *ExecutionContext
-	tasks    []TaskIntf
-	paths    map[TaskIntf]map[PathCondition]TaskIntf
-	executed map[TaskIntf]bool
+	context    *ExecutionContext
+	tasks      []TaskIntf
+	taskGroups []*TaskGroup
+	paths      map[TaskIntf]map[PathCondition]TaskIntf
+	executed   map[TaskIntf]bool
 }
 
 // ExecutionContext is a map of values of any type that is passed from Task to Task as the graphflow is executed
@@ -193,9 +187,35 @@ func (gf *Graphflow) RenderGraph() (bytes.Buffer, error) {
 // rendered with their values at the top of the image.
 func (gf *Graphflow) RenderPathThroughGraph(context *ExecutionContext, contextKeysToRender ...string) (bytes.Buffer, error) {
 	if len(gf.executed) == 0 {
-		gf.Run(context)
+		err := gf.Run(context)
+		if err != nil {
+			var buf bytes.Buffer
+			return buf, err
+		}
 	}
 	return gf.generateGraph(true, contextKeysToRender...)
+}
+
+// TaskGroup can have Tasks added to it, meaning they'll be rendered together with a box around them and a label set to the
+// TaskGroup's name
+type TaskGroup struct {
+	name  string
+	tasks []TaskIntf
+}
+
+// AddTasks allows Tasks to be added to a TaskGroup
+func (t *TaskGroup) AddTasks(tasks ...TaskIntf) {
+	t.tasks = append(t.tasks, tasks...)
+}
+
+// NewTaskGroup creates a new TaskGroup with the provided name and adds it to the graphflow. Add Tasks to the *TaskGroup it returns
+// for them to be rendered together with a box around them and a label set to the TaskGroup's name
+func (gf *Graphflow) NewTaskGroup(name string) *TaskGroup {
+	taskGroup := &TaskGroup{
+		name: name,
+	}
+	gf.taskGroups = append(gf.taskGroups, taskGroup)
+	return taskGroup
 }
 
 // BFS (Breadth-First Search) is one of the most widely known algorithms to traverse a graph.
@@ -313,6 +333,20 @@ func (gf *Graphflow) validateTasks() error {
 			}
 		}
 	}
+	for _, taskGroup := range gf.taskGroups {
+		for _, t := range taskGroup.tasks {
+			for _, otherTaskGroup := range gf.taskGroups {
+				if taskGroup == otherTaskGroup {
+					continue
+				}
+				for _, otherTask := range otherTaskGroup.tasks {
+					if t == otherTask {
+						return fmt.Errorf("A Task can only exist in one TaskGroup but \"%s\" exists in \"%s\" and \"%s\"", t, taskGroup.name, otherTaskGroup.name)
+					}
+				}
+			}
+		}
+	}
 	return nil
 }
 
@@ -328,19 +362,36 @@ func contains(conditions []PathCondition, condition PathCondition) bool {
 func (gf *Graphflow) generateGraph(showPath bool, contextKeysToRender ...string) (bytes.Buffer, error) {
 	var buf bytes.Buffer
 	g := graphviz.New()
-	graph, err := g.Graph()
+	parentGraph, err := g.Graph()
 	if err != nil {
 		return buf, err
 	}
 	defer func() {
-		if err := graph.Close(); err != nil {
+		if err := parentGraph.Close(); err != nil {
 			log.Fatal(err)
 		}
 		g.Close()
 	}()
-	nodes := make(map[string]*cgraph.Node)
+	graphs := make(map[TaskIntf]*cgraph.Graph)
+	// first of all link each task to the parent graph
 	for _, t := range gf.tasks {
-		n, err := graph.CreateNode(t.String())
+		graphs[t] = parentGraph
+	}
+	// for each task group, create a sub-graph
+	for _, tg := range gf.taskGroups {
+		graph := parentGraph.SubGraph(fmt.Sprintf("cluster_%s", tg.name), 1)
+		graph.SetLabel(tg.name)
+		graph.SetLabelJust("l")
+		for _, t := range tg.tasks {
+			// link tasks to the subgraph instead
+			graphs[t] = graph
+		}
+	}
+
+	nodes := make(map[TaskIntf]*cgraph.Node)
+	for _, t := range gf.tasks {
+		n, err := graphs[t].CreateNode(fmt.Sprintf("%p", t))
+		n.SetLabel(t.String())
 		if err != nil {
 			return buf, err
 		}
@@ -353,7 +404,7 @@ func (gf *Graphflow) generateGraph(showPath bool, contextKeysToRender ...string)
 			n.SetColorScheme("paired10")
 			n.SetColor("6") // red
 		}
-		nodes[fmt.Sprintf("%T", t)] = n
+		nodes[t] = n
 	}
 	if showPath {
 		desc := ""
@@ -362,7 +413,7 @@ func (gf *Graphflow) generateGraph(showPath bool, contextKeysToRender ...string)
 		}
 		if desc != "" {
 			desc = fmt.Sprintf("This is the path taken when:\n%s", desc)
-			n, err := graph.CreateNode(desc)
+			n, err := parentGraph.CreateNode(desc)
 			if err != nil {
 				return buf, err
 			}
@@ -371,10 +422,10 @@ func (gf *Graphflow) generateGraph(showPath bool, contextKeysToRender ...string)
 		}
 	}
 	for from, edge := range gf.paths {
-		n1 := nodes[fmt.Sprintf("%T", from)]
+		n1 := nodes[from]
 		for label, to := range edge {
-			n2 := nodes[fmt.Sprintf("%T", to)]
-			e, err := graph.CreateEdge("to", n1, n2)
+			n2 := nodes[to]
+			e, err := parentGraph.CreateEdge("to", n1, n2)
 			if err != nil {
 				return buf, err
 			}
@@ -417,7 +468,7 @@ func (gf *Graphflow) generateGraph(showPath bool, contextKeysToRender ...string)
 			}
 		}
 	}
-	if err := g.Render(graph, graphviz.PNG, &buf); err != nil {
+	if err := g.Render(parentGraph, graphviz.PNG, &buf); err != nil {
 		return buf, err
 	}
 	return buf, nil
