@@ -121,7 +121,7 @@ type TaskIntf interface {
 	SetExitPath(PathCondition)
 	Execute(*ExecutionContext) error
 	String() string
-	getExitPath() PathCondition
+	ExitPath() PathCondition
 }
 
 // Task is a struct that all new Tasks should include in their definition.
@@ -146,7 +146,8 @@ func (t *Task) SetExitPath(path PathCondition) {
 	t.exitPath = path
 }
 
-func (t *Task) getExitPath() PathCondition {
+// ExitPath returns the current ExitPath for this task
+func (t *Task) ExitPath() PathCondition {
 	return t.exitPath
 }
 
@@ -274,7 +275,7 @@ func (gf *Graphflow) execute() error {
 		near := gf.paths[task]
 
 		for path, to := range near {
-			if path != task.getExitPath() {
+			if path != task.ExitPath() {
 				continue
 			}
 			if !visited[to] {
