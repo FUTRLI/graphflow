@@ -70,33 +70,6 @@ func (t *TaskWithNoName) Execute(ctx *ExecutionContext) error {
 	return nil
 }
 
-func buildGraphflowOld() Graphflow {
-	var gf Graphflow
-
-	// create task instances
-	start := new(StartTask)
-	isTheSkyCloudy := new(IsTheSkyCloudy)
-	forecastRain := new(ForecastRain)
-	forecastSun := new(ForecastSun)
-	end := new(EndTask)
-
-	// add task instances to the graphflow
-	gf.AddTask(start)
-	gf.AddTask(isTheSkyCloudy)
-	gf.AddTask(forecastRain)
-	gf.AddTask(forecastSun)
-	gf.AddTask(end)
-
-	// add task paths to the graphflow
-	gf.AddPath(start, ALWAYS, isTheSkyCloudy)
-	gf.AddPath(isTheSkyCloudy, YES, forecastRain)
-	gf.AddPath(isTheSkyCloudy, NO, forecastSun)
-	gf.AddPath(forecastRain, ALWAYS, end)
-	gf.AddPath(forecastSun, ALWAYS, end)
-
-	return gf
-}
-
 func buildGraphflow() *Graphflow {
 	gf := new(Graphflow)
 
