@@ -66,8 +66,9 @@ func (gf *Graphflow) GetContext() *ExecutionContext {
 }
 
 // AddTask adds a new Task (a struct implementing the TaskIntf interface) to the graphflow
-func (gf *Graphflow) AddTask(task TaskIntf) {
+func (gf *Graphflow) AddTask(task TaskIntf) TaskIntf {
 	gf.tasks = append(gf.tasks, task)
+	return task
 }
 
 // AddPath adds conditional Paths between graphflow Tasks
