@@ -384,6 +384,8 @@ func (gf *Graphflow) generateGraph(showPath bool, contextKeysToRender ...string)
 		graph := parentGraph.SubGraph(fmt.Sprintf("cluster_%s", tg.name), 1)
 		graph.SetLabel(tg.name)
 		graph.SetLabelJust("l")
+		graph.SetStyle("filled")
+		graph.SetBackgroundColor("lightgrey")
 		for _, t := range tg.tasks {
 			// link tasks to the subgraph instead
 			graphs[t] = graph
