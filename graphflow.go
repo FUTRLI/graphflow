@@ -198,13 +198,13 @@ func (gf *Graphflow) RenderPathThroughGraph(context *ExecutionContext, contextKe
 	return gf.generateGraph(true, graphviz.PNG, contextKeysToRender...)
 }
 
-// RenderGraph returns a buffer of bytes containing a graphviz svg representation of all the Tasks and the Paths
+// RenderSVGGraph returns a buffer of bytes containing a graphviz svg representation of all the Tasks and the Paths
 // connecting them
 func (gf *Graphflow) RenderSVGGraph() (bytes.Buffer, error) {
 	return gf.generateGraph(false, graphviz.SVG, "")
 }
 
-// RenderPathThroughGraph returns a buffer of bytes containing a graphviz svg representation of all the Tasks and the Paths
+// RenderSVGPathThroughGraph returns a buffer of bytes containing a graphviz svg representation of all the Tasks and the Paths
 // connecting them, with the actual path taken for the given ExecutionContext highlighted. Any Context Keys provided will be
 // rendered with their values at the top of the image.
 func (gf *Graphflow) RenderSVGPathThroughGraph(context *ExecutionContext, contextKeysToRender ...string) (bytes.Buffer, error) {
