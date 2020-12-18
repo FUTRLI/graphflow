@@ -181,7 +181,7 @@ func (t *EndTask) String() string {
 // RenderGraph returns a buffer of bytes containing a graphviz png representation of all the Tasks and the Paths
 // connecting them
 func (gf *Graphflow) RenderGraph() (bytes.Buffer, error) {
-	return gf.generateGraph(false, "")
+	return gf.generateGraph(false, graphviz.PNG, "")
 }
 
 // RenderPathThroughGraph returns a buffer of bytes containing a graphviz png representation of all the Tasks and the Paths
@@ -195,7 +195,27 @@ func (gf *Graphflow) RenderPathThroughGraph(context *ExecutionContext, contextKe
 			return buf, err
 		}
 	}
-	return gf.generateGraph(true, contextKeysToRender...)
+	return gf.generateGraph(true, graphviz.PNG, contextKeysToRender...)
+}
+
+// RenderGraph returns a buffer of bytes containing a graphviz svg representation of all the Tasks and the Paths
+// connecting them
+func (gf *Graphflow) RenderSVGGraph() (bytes.Buffer, error) {
+	return gf.generateGraph(false, graphviz.SVG, "")
+}
+
+// RenderPathThroughGraph returns a buffer of bytes containing a graphviz svg representation of all the Tasks and the Paths
+// connecting them, with the actual path taken for the given ExecutionContext highlighted. Any Context Keys provided will be
+// rendered with their values at the top of the image.
+func (gf *Graphflow) RenderSVGPathThroughGraph(context *ExecutionContext, contextKeysToRender ...string) (bytes.Buffer, error) {
+	if len(gf.executed) == 0 {
+		err := gf.Run(context)
+		if err != nil {
+			var buf bytes.Buffer
+			return buf, err
+		}
+	}
+	return gf.generateGraph(true, graphviz.SVG, contextKeysToRender...)
 }
 
 // TaskGroup can have Tasks added to it, meaning they'll be rendered together with a box around them and a label set to the
@@ -361,7 +381,7 @@ func contains(conditions []PathCondition, condition PathCondition) bool {
 	return false
 }
 
-func (gf *Graphflow) generateGraph(showPath bool, contextKeysToRender ...string) (bytes.Buffer, error) {
+func (gf *Graphflow) generateGraph(showPath bool, format graphviz.Format, contextKeysToRender ...string) (bytes.Buffer, error) {
 	var buf bytes.Buffer
 	g := graphviz.New()
 	parentGraph, err := g.Graph()
@@ -472,7 +492,7 @@ func (gf *Graphflow) generateGraph(showPath bool, contextKeysToRender ...string)
 			}
 		}
 	}
-	if err := g.Render(parentGraph, graphviz.PNG, &buf); err != nil {
+	if err := g.Render(parentGraph, format, &buf); err != nil {
 		return buf, err
 	}
 	return buf, nil
