@@ -93,7 +93,7 @@ func buildGraphflow() *graphflow.Graphflow {
 func TestGraphflowRenderGraph(t *testing.T) {
 	gf := buildGraphflow()
 
-	bytes, err := gf.RenderGraph()
+	bytes, err := RenderGraph(gf)
 
 	assert.NotEmpty(t, bytes.Bytes())
 	assert.Nil(t, err)
@@ -105,7 +105,7 @@ func TestGraphflowRenderPathThroughGraph(t *testing.T) {
 	ctx.Set("Forecast", "")
 	gf := buildGraphflow()
 
-	bytes, err := gf.RenderPathThroughGraph(ctx, "Sky")
+	bytes, err := RenderPathThroughGraph(ctx, gf, "Sky")
 
 	assert.NotEmpty(t, bytes.Bytes())
 	assert.Nil(t, err)
@@ -126,7 +126,7 @@ func TestWorkflowWithNoPathsShouldRenderFine(t *testing.T) {
 	gf.AddTask(forecastSun)
 	gf.AddTask(end)
 
-	_, err := gf.RenderGraph()
+	_, err := RenderGraph(&gf)
 
 	assert.Nil(t, err)
 }
@@ -144,7 +144,7 @@ func TestWorkflowWithNoPathsShouldRenderPathThroughGraphFine(t *testing.T) {
 	gf.AddTask(forecastSun)
 	gf.AddTask(end)
 
-	_, err := gf.RenderPathThroughGraph(new(graphflow.ExecutionContext))
+	_, err := RenderPathThroughGraph(new(graphflow.ExecutionContext), &gf)
 
 	assert.Nil(t, err)
 }
@@ -166,7 +166,7 @@ func TestWorkflowWithTaskWithNoName(t *testing.T) {
 	gf.AddPath(start, graphflow.ALWAYS, forecastNothing)
 	gf.AddPath(forecastNothing, graphflow.ALWAYS, end)
 
-	_, err := gf.RenderPathThroughGraph(new(graphflow.ExecutionContext))
+	_, err := RenderPathThroughGraph(new(graphflow.ExecutionContext), &gf)
 
 	assert.Nil(t, err)
 
@@ -195,8 +195,7 @@ func TestAddTaskGroups(t *testing.T) {
 	assert.Contains(t, gf.TaskGroups(), taskGroup)
 	assert.Contains(t, gf.TaskGroups()[0].Tasks(), forecastSun)
 
-	_, err := gf.RenderPathThroughGraph(new(graphflow.ExecutionContext))
-
+	_, err := RenderPathThroughGraph(new(graphflow.ExecutionContext), &gf)
 	assert.Nil(t, err)
 }
 
@@ -220,7 +219,7 @@ func TestTaskGroupsWithDuplicateTasks(t *testing.T) {
 	duplicateTaskGroup := gf.NewTaskGroup("my other taskgroup")
 	duplicateTaskGroup.AddTasks(forecastSun)
 
-	_, err := gf.RenderPathThroughGraph(new(graphflow.ExecutionContext))
+	_, err := RenderPathThroughGraph(new(graphflow.ExecutionContext), &gf)
 
 	assert.NotNil(t, err)
 }
