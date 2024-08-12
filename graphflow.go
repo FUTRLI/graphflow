@@ -5,17 +5,11 @@
 //
 // The graphflow package allows this logic to be built and represented as a self-documenting series of Task nodes with
 // conditional Paths between them, allowing a project stakeholder to easily validate what has been built.
-//
 package graphflow
 
 import (
-	"bytes"
 	"errors"
 	"fmt"
-	"log"
-
-	"github.com/goccy/go-graphviz"
-	"github.com/goccy/go-graphviz/cgraph"
 )
 
 // PathCondition is a type representing the condition that should be satisfied for a certain path
@@ -65,6 +59,22 @@ func (gf *Graphflow) GetContext() *ExecutionContext {
 	return gf.context
 }
 
+func (gf *Graphflow) Tasks() []TaskIntf {
+	return gf.tasks
+}
+
+func (gf *Graphflow) TaskGroups() []*TaskGroup {
+	return gf.taskGroups
+}
+
+func (gf *Graphflow) Paths() map[TaskIntf]map[PathCondition]TaskIntf {
+	return gf.paths
+}
+
+func (gf *Graphflow) Executed() map[TaskIntf]bool {
+	return gf.executed
+}
+
 // AddTask adds a new Task (a struct implementing the TaskIntf interface) to the graphflow
 func (gf *Graphflow) AddTask(task TaskIntf) TaskIntf {
 	gf.tasks = append(gf.tasks, task)
@@ -112,9 +122,10 @@ func (ctx *ExecutionContext) Set(key string, value interface{}) {
 // New Tasks should be defined like so:
 //
 // Example:
-//   type MyNewTask struct {
-//	   graphflow.Task
-//	 }
+//
+//	  type MyNewTask struct {
+//		   graphflow.Task
+//		 }
 //
 // This ensures that they include the implementation of SetExitPath(PathCondition)
 // provided by graphflow.Task
@@ -128,9 +139,10 @@ type TaskIntf interface {
 // Task is a struct that all new Tasks should include in their definition.
 //
 // Example:
-//   type MyNewTask struct {
-//	   graphflow.Task
-//	 }
+//
+//	  type MyNewTask struct {
+//		   graphflow.Task
+//		 }
 type Task struct {
 	exitPath PathCondition
 }
@@ -178,46 +190,6 @@ func (t *EndTask) String() string {
 	return "End"
 }
 
-// RenderGraph returns a buffer of bytes containing a graphviz png representation of all the Tasks and the Paths
-// connecting them
-func (gf *Graphflow) RenderGraph() (bytes.Buffer, error) {
-	return gf.generateGraph(false, graphviz.PNG, "")
-}
-
-// RenderPathThroughGraph returns a buffer of bytes containing a graphviz png representation of all the Tasks and the Paths
-// connecting them, with the actual path taken for the given ExecutionContext highlighted. Any Context Keys provided will be
-// rendered with their values at the top of the image.
-func (gf *Graphflow) RenderPathThroughGraph(context *ExecutionContext, contextKeysToRender ...string) (bytes.Buffer, error) {
-	if len(gf.executed) == 0 {
-		err := gf.Run(context)
-		if err != nil {
-			var buf bytes.Buffer
-			return buf, err
-		}
-	}
-	return gf.generateGraph(true, graphviz.PNG, contextKeysToRender...)
-}
-
-// RenderSVGGraph returns a buffer of bytes containing a graphviz svg representation of all the Tasks and the Paths
-// connecting them
-func (gf *Graphflow) RenderSVGGraph() (bytes.Buffer, error) {
-	return gf.generateGraph(false, graphviz.SVG, "")
-}
-
-// RenderSVGPathThroughGraph returns a buffer of bytes containing a graphviz svg representation of all the Tasks and the Paths
-// connecting them, with the actual path taken for the given ExecutionContext highlighted. Any Context Keys provided will be
-// rendered with their values at the top of the image.
-func (gf *Graphflow) RenderSVGPathThroughGraph(context *ExecutionContext, contextKeysToRender ...string) (bytes.Buffer, error) {
-	if len(gf.executed) == 0 {
-		err := gf.Run(context)
-		if err != nil {
-			var buf bytes.Buffer
-			return buf, err
-		}
-	}
-	return gf.generateGraph(true, graphviz.SVG, contextKeysToRender...)
-}
-
 // TaskGroup can have Tasks added to it, meaning they'll be rendered together with a box around them and a label set to the
 // TaskGroup's name
 type TaskGroup struct {
@@ -228,6 +200,14 @@ type TaskGroup struct {
 // AddTasks allows Tasks to be added to a TaskGroup
 func (t *TaskGroup) AddTasks(tasks ...TaskIntf) {
 	t.tasks = append(t.tasks, tasks...)
+}
+
+func (t *TaskGroup) Tasks() []TaskIntf {
+	return t.tasks
+}
+
+func (t *TaskGroup) Name() string {
+	return t.name
 }
 
 // NewTaskGroup creates a new TaskGroup with the provided name and adds it to the graphflow. Add Tasks to the *TaskGroup it returns
@@ -379,121 +359,4 @@ func contains(conditions []PathCondition, condition PathCondition) bool {
 		}
 	}
 	return false
-}
-
-func (gf *Graphflow) generateGraph(showPath bool, format graphviz.Format, contextKeysToRender ...string) (bytes.Buffer, error) {
-	var buf bytes.Buffer
-	g := graphviz.New()
-	parentGraph, err := g.Graph()
-	if err != nil {
-		return buf, err
-	}
-	defer func() {
-		if err := parentGraph.Close(); err != nil {
-			log.Fatal(err)
-		}
-		g.Close()
-	}()
-	graphs := make(map[TaskIntf]*cgraph.Graph)
-	// first of all link each task to the parent graph
-	for _, t := range gf.tasks {
-		graphs[t] = parentGraph
-	}
-	// for each task group, create a sub-graph
-	for _, tg := range gf.taskGroups {
-		graph := parentGraph.SubGraph(fmt.Sprintf("cluster_%s", tg.name), 1)
-		graph.SetLabel(tg.name)
-		graph.SetLabelJust("l")
-		graph.SetStyle("filled")
-		graph.SetBackgroundColor("lightgrey")
-		for _, t := range tg.tasks {
-			// link tasks to the subgraph instead
-			graphs[t] = graph
-		}
-	}
-
-	nodes := make(map[TaskIntf]*cgraph.Node)
-	for _, t := range gf.tasks {
-		n, err := graphs[t].CreateNode(fmt.Sprintf("%p", t))
-		n.SetLabel(t.String())
-		if err != nil {
-			return buf, err
-		}
-		n.SetStyle("filled")
-		if showPath {
-			n.SetColorScheme("greys3")
-			n.SetColor("1")
-			n.SetFontColor("2")
-		} else {
-			n.SetColorScheme("paired10")
-			n.SetColor("6") // red
-		}
-		nodes[t] = n
-	}
-	if showPath {
-		desc := ""
-		for _, k := range contextKeysToRender {
-			desc = fmt.Sprintf("%s\n%s = %v", desc, k, gf.context.Get(k))
-		}
-		if desc != "" {
-			desc = fmt.Sprintf("This is the path taken when:\n%s", desc)
-			n, err := parentGraph.CreateNode(desc)
-			if err != nil {
-				return buf, err
-			}
-			n.SetShape(cgraph.UnderlineShape)
-			n.SetMargin(0.2)
-		}
-	}
-	for from, edge := range gf.paths {
-		n1 := nodes[from]
-		for label, to := range edge {
-			n2 := nodes[to]
-			e, err := parentGraph.CreateEdge("to", n1, n2)
-			if err != nil {
-				return buf, err
-			}
-			if label != ALWAYS {
-				e.SetLabel(PathConditionName[label])
-			}
-			_, isEndTask := to.(*EndTask)
-			if isEndTask {
-				n2.SetColorScheme("paired10")
-				n2.SetColor("7") // orange
-				n2.SetFontColor("")
-			}
-			if showPath {
-				if !gf.executed[to] {
-					n2.SetColorScheme("greys3")
-					n2.SetColor("1") // grey
-					n2.SetFontColor("2")
-				}
-			}
-		}
-		n1.SetColorScheme("paired10")
-		n1.SetFontColor("")
-		_, isStartTask := from.(*StartTask)
-		if isStartTask {
-			n1.SetColor("7") // orange
-		} else {
-			n1.SetColor("9") // mauve
-			for label := range edge {
-				if label == YES || label == NO {
-					n1.SetColor("3") // green
-					break
-				}
-			}
-		}
-		if showPath {
-			if !gf.executed[from] {
-				n1.SetColorScheme("greys3")
-				n1.SetColor("1") // grey
-				n1.SetFontColor("2")
-			}
-		}
-	}
-	if err := g.Render(parentGraph, format, &buf); err != nil {
-		return buf, err
-	}
-	return buf, nil
 }
