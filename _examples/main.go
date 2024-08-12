@@ -8,6 +8,7 @@ import (
 	"github.com/futrli/graphflow/_examples/tasks"
 
 	"github.com/futrli/graphflow"
+	"github.com/futrli/graphflow/rendering"
 )
 
 // my graphflow:
@@ -55,10 +56,10 @@ func main() {
 
 	fmt.Printf("Successfully forecasted: %v\n", ctx.Get("Forecast"))
 
-	buf, _ := gf.RenderGraph()
+	buf, _ := rendering.RenderGraph(gf)
 	ioutil.WriteFile("./graph.png", buf.Bytes(), 0664)
 
-	buf, _ = gf.RenderPathThroughGraph(ctx, "Sky")
+	buf, _ = rendering.RenderPathThroughGraph(ctx, gf, "Sky")
 	ioutil.WriteFile("./pathThroughGraph.png", buf.Bytes(), 0664)
 
 }
